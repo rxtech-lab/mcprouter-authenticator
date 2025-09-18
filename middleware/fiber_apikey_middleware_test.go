@@ -13,24 +13,6 @@ import (
 	"github.com/rxtech-lab/mcprouter-authenticator/types"
 )
 
-// UserContextKey is the key used to store the user in the Fiber context
-const UserContextKey = "user"
-
-// GetUserFromContext retrieves the user from the Fiber context
-func GetUserFromContext(c *fiber.Ctx) *types.User {
-	user, ok := c.Locals(UserContextKey).(*types.User)
-	if !ok {
-		return nil
-	}
-	return user
-}
-
-// Helper function to add user to context for tests
-func addUserToContext(c *fiber.Ctx, user *types.User) error {
-	c.Locals(UserContextKey, user)
-	return nil
-}
-
 func TestFiberApikeyMiddleware(t *testing.T) {
 	t.Run("successful authentication", func(t *testing.T) {
 		expectedUser := types.User{
@@ -70,7 +52,7 @@ func TestFiberApikeyMiddleware(t *testing.T) {
 		defer authServer.Close()
 
 		auth := authenticator.NewApikeyAuthenticator(authServer.URL, nil)
-		middleware := FiberApikeyMiddleware(auth, "test-server-key", addUserToContext)
+		middleware := FiberApikeyMiddleware(auth, "test-server-key")
 
 		app := fiber.New()
 		app.Use(middleware)
@@ -115,46 +97,9 @@ func TestFiberApikeyMiddleware(t *testing.T) {
 		}
 	})
 
-	t.Run("missing x-api-key header", func(t *testing.T) {
-		auth := authenticator.NewApikeyAuthenticator("http://example.com", nil)
-		middleware := FiberApikeyMiddleware(auth, "test-server-key", addUserToContext)
-
-		app := fiber.New()
-		app.Use(middleware)
-		app.Get("/test", func(c *fiber.Ctx) error {
-			return c.JSON(fiber.Map{"message": "should not reach here"})
-		})
-
-		req := httptest.NewRequest("GET", "/test", nil)
-
-		resp, err := app.Test(req)
-		if err != nil {
-			t.Fatalf("failed to make request: %v", err)
-		}
-
-		if resp.StatusCode != 401 {
-			t.Errorf("expected status 401, got %d", resp.StatusCode)
-		}
-
-		body, err := io.ReadAll(resp.Body)
-		if err != nil {
-			t.Fatalf("failed to read response body: %v", err)
-		}
-
-		var response map[string]interface{}
-		if err := json.Unmarshal(body, &response); err != nil {
-			t.Fatalf("failed to unmarshal response: %v", err)
-		}
-
-		expectedError := "Missing x-api-key header"
-		if response["error"] != expectedError {
-			t.Errorf("expected error '%s', got '%s'", expectedError, response["error"])
-		}
-	})
-
 	t.Run("empty x-api-key header", func(t *testing.T) {
 		auth := authenticator.NewApikeyAuthenticator("http://example.com", nil)
-		middleware := FiberApikeyMiddleware(auth, "test-server-key", addUserToContext)
+		middleware := FiberApikeyMiddleware(auth, "test-server-key")
 
 		app := fiber.New()
 		app.Use(middleware)
@@ -170,23 +115,30 @@ func TestFiberApikeyMiddleware(t *testing.T) {
 			t.Fatalf("failed to make request: %v", err)
 		}
 
-		if resp.StatusCode != 401 {
-			t.Errorf("expected status 401, got %d", resp.StatusCode)
+		if resp.StatusCode != 200 {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
+	})
 
-		body, err := io.ReadAll(resp.Body)
+	t.Run("missing x-api-key header", func(t *testing.T) {
+		auth := authenticator.NewApikeyAuthenticator("http://example.com", nil)
+		middleware := FiberApikeyMiddleware(auth, "test-server-key")
+
+		app := fiber.New()
+		app.Use(middleware)
+		app.Get("/test", func(c *fiber.Ctx) error {
+			return c.JSON(fiber.Map{"message": "should not reach here"})
+		})
+
+		req := httptest.NewRequest("GET", "/test", nil)
+
+		resp, err := app.Test(req)
 		if err != nil {
-			t.Fatalf("failed to read response body: %v", err)
+			t.Fatalf("failed to make request: %v", err)
 		}
 
-		var response map[string]interface{}
-		if err := json.Unmarshal(body, &response); err != nil {
-			t.Fatalf("failed to unmarshal response: %v", err)
-		}
-
-		expectedError := "Missing x-api-key header"
-		if response["error"] != expectedError {
-			t.Errorf("expected error '%s', got '%s'", expectedError, response["error"])
+		if resp.StatusCode != 200 {
+			t.Errorf("expected status 200, got %d", resp.StatusCode)
 		}
 	})
 
@@ -198,7 +150,7 @@ func TestFiberApikeyMiddleware(t *testing.T) {
 		defer authServer.Close()
 
 		auth := authenticator.NewApikeyAuthenticator(authServer.URL, nil)
-		middleware := FiberApikeyMiddleware(auth, "test-server-key", addUserToContext)
+		middleware := FiberApikeyMiddleware(auth, "test-server-key")
 
 		app := fiber.New()
 		app.Use(middleware)
@@ -236,7 +188,7 @@ func TestFiberApikeyMiddleware(t *testing.T) {
 
 	t.Run("authentication server error", func(t *testing.T) {
 		auth := authenticator.NewApikeyAuthenticator("http://invalid-url-that-does-not-exist", nil)
-		middleware := FiberApikeyMiddleware(auth, "test-server-key", addUserToContext)
+		middleware := FiberApikeyMiddleware(auth, "test-server-key")
 
 		app := fiber.New()
 		app.Use(middleware)
@@ -433,7 +385,7 @@ func TestMiddlewareIntegration(t *testing.T) {
 		defer authServer.Close()
 
 		auth := authenticator.NewApikeyAuthenticator(authServer.URL, nil)
-		middleware := FiberApikeyMiddleware(auth, "integration-server-key", addUserToContext)
+		middleware := FiberApikeyMiddleware(auth, "integration-server-key")
 
 		app := fiber.New()
 
