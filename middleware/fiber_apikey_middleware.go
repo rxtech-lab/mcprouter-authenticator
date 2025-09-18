@@ -6,9 +6,11 @@ import (
 	"github.com/rxtech-lab/mcprouter-authenticator/types"
 )
 
-const UserContextKey = "user"
+type OnAuthenticationSuccess func(c *fiber.Ctx, user *types.User) error
 
-func FiberApikeyMiddleware(auth *authenticator.ApikeyAuthenticator, serverKey string) fiber.Handler {
+// OnAuthenticationSuccess is a function that is called when the authentication is successful
+// You can use onAuthenticationSuccess to add the user to the context
+func FiberApikeyMiddleware(auth *authenticator.ApikeyAuthenticator, serverKey string, onAuthenticationSuccess OnAuthenticationSuccess) fiber.Handler {
 	return func(c *fiber.Ctx) error {
 		userKey := c.Get("x-api-key")
 		if userKey == "" {
@@ -24,15 +26,9 @@ func FiberApikeyMiddleware(auth *authenticator.ApikeyAuthenticator, serverKey st
 			})
 		}
 
-		c.Locals(UserContextKey, user)
+		if onAuthenticationSuccess != nil {
+			onAuthenticationSuccess(c, user)
+		}
 		return c.Next()
 	}
-}
-
-func GetUserFromContext(c *fiber.Ctx) *types.User {
-	user, ok := c.Locals(UserContextKey).(*types.User)
-	if !ok {
-		return nil
-	}
-	return user
 }
