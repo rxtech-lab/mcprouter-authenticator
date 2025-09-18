@@ -12,9 +12,17 @@ type OnAuthenticationSuccess func(c *fiber.Ctx, user *types.User) error
 // You can use onAuthenticationSuccess to add the user to the context
 func FiberApikeyMiddleware(auth *authenticator.ApikeyAuthenticator, serverKey string, onAuthenticationSuccess OnAuthenticationSuccess) fiber.Handler {
 	return func(c *fiber.Ctx) error {
-		userKey := c.Get("x-api-key")
-		if userKey == "" {
-			return c.Next()
+		userKeyFromHeader := c.Get("x-api-key")
+		userKeyFromQuery := c.Query("api-key")
+		if userKeyFromHeader == "" && userKeyFromQuery == "" {
+			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
+				"error": "Missing x-api-key header",
+			})
+		}
+
+		userKey := userKeyFromHeader
+		if userKeyFromQuery != "" {
+			userKey = userKeyFromQuery
 		}
 
 		user, err := auth.Authenticate(serverKey, userKey)

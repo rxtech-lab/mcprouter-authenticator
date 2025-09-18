@@ -35,16 +35,28 @@ func (a *ApikeyAuthenticator) Authenticate(serverKey string, userKey string) (*t
 		return nil, err
 	}
 
-	response, err := a.httpClient.Post(fmt.Sprintf("%s/api/auth/mcp/session", a.url), "application/json", bytes.NewBuffer(requestBody))
+	req, err := http.NewRequest("POST", fmt.Sprintf("%s/api/auth/mcp/session", a.url), bytes.NewBuffer(requestBody))
 	if err != nil {
 		return nil, err
 	}
 
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("x-api-key", serverKey)
+
+	response, err := a.httpClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
 	defer response.Body.Close()
 
 	responseBody, err := io.ReadAll(response.Body)
 	if err != nil {
 		return nil, err
+	}
+
+	// check status code
+	if response.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("authentication failed with body: %s", string(responseBody))
 	}
 
 	var result types.ApikeyAuthenticationResult
