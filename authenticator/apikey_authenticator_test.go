@@ -38,12 +38,13 @@ func TestNewApikeyAuthenticator(t *testing.T) {
 
 func TestApikeyAuthenticator_Authenticate(t *testing.T) {
 	t.Run("successful authentication", func(t *testing.T) {
+		emailVerified := "2025-01-01"
 		expectedUser := types.User{
 			ID:            "user123",
 			Name:          "John Doe",
 			Email:         "john@example.com",
 			Role:          "admin",
-			EmailVerified: true,
+			EmailVerified: &emailVerified,
 		}
 
 		response := types.ApikeyAuthenticationResult{
@@ -105,8 +106,8 @@ func TestApikeyAuthenticator_Authenticate(t *testing.T) {
 		if user.Role != expectedUser.Role {
 			t.Errorf("expected user role %s, got %s", expectedUser.Role, user.Role)
 		}
-		if user.EmailVerified != expectedUser.EmailVerified {
-			t.Errorf("expected emailVerified %t, got %t", expectedUser.EmailVerified, user.EmailVerified)
+		if *user.EmailVerified != *expectedUser.EmailVerified {
+			t.Errorf("expected emailVerified %s, got %s", *expectedUser.EmailVerified, *user.EmailVerified)
 		}
 	})
 
