@@ -14,9 +14,7 @@ func FiberApikeyMiddleware(auth *authenticator.ApikeyAuthenticator, serverKey st
 	return func(c *fiber.Ctx) error {
 		userKey := c.Get("x-api-key")
 		if userKey == "" {
-			return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{
-				"error": "Missing x-api-key header",
-			})
+			return c.Next()
 		}
 
 		user, err := auth.Authenticate(serverKey, userKey)
