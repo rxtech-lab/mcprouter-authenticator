@@ -55,6 +55,10 @@ func TestApikeyAuthenticator_Authenticate(t *testing.T) {
 				t.Errorf("expected POST request, got %s", r.Method)
 			}
 
+			if r.Header.Get("x-api-key") != "test-server-key" {
+				t.Errorf("expected x-api-key 'test-server-key', got %s", r.Header.Get("x-api-key"))
+			}
+
 			if r.URL.Path != "/api/auth/mcp/session" {
 				t.Errorf("expected path '/api/auth/mcp/session', got %s", r.URL.Path)
 			}
