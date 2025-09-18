@@ -1,19 +1,11 @@
 package types
 
-// {
-// 	id: user.id,
-// 	name: user.name,
-// 	email: user.email,
-// 	role: user.role,
-// 	emailVerified: user.emailVerified,
-//   }
-
 type User struct {
-	ID            string `json:"id"`
-	Name          string `json:"name"`
-	Email         string `json:"email"`
-	Role          string `json:"role"`
-	EmailVerified bool   `json:"emailVerified"`
+	ID            string  `json:"id"`
+	Name          string  `json:"name"`
+	Email         string  `json:"email"`
+	Role          string  `json:"role"`
+	EmailVerified *string `json:"emailVerified,omitempty"`
 }
 
 type ApikeyAuthenticationResult struct {
